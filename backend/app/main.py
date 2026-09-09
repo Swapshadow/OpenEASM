@@ -4,12 +4,15 @@ from datetime import datetime, timezone
 from uuid import uuid4
 import asyncio
 import traceback
+import logging
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request, Depends
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
+
+logger = logging.getLogger(__name__)
 
 from app.validators import normalize_domain
 from app.services.dns_audit import audit_dns, audit_mail
@@ -54,6 +57,7 @@ def startup_event():
 
 @app.exception_handler(Exception)
 async def openeasm_unhandled_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Unhandled exception in {request.url.path}: {exc.__class__.__name__}: {exc}", exc_info=True)
     return JSONResponse(
         status_code=500,
         content={

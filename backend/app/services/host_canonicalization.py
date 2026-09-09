@@ -195,8 +195,13 @@ def _nmap_key(s: dict[str, Any]) -> tuple[Any, ...]:
     return (s.get("port"), s.get("protocol", "tcp"), s.get("name") or s.get("service"), s.get("product") or "", s.get("version") or "")
 
 
-def _service_sig(h: dict[str, Any]) -> tuple[Any, ...]:
-    return tuple(sorted([_service_key(s) for s in (h.get("open_services") or [])] + [_nmap_key(s) for s in (h.get("nmap_services") or [])]))
+def _service_sig(h: dict[str, Any]) -> tuple[tuple[Any, ...], ...]:
+    # Sorted separately: _service_key and _nmap_key tuples differ in element
+    # types at the same positions (e.g. str scheme vs int port), so sorting a
+    # combined list can compare incomparable types (int vs str) and raise TypeError.
+    open_services = tuple(sorted((_service_key(s) for s in (h.get("open_services") or [])), key=lambda t: tuple(str(x) for x in t)))
+    nmap_services = tuple(sorted((_nmap_key(s) for s in (h.get("nmap_services") or [])), key=lambda t: tuple(str(x) for x in t)))
+    return (open_services, nmap_services)
 
 
 def _title_sig(h: dict[str, Any]) -> tuple[str, str, tuple[str, ...]]:
